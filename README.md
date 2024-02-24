@@ -4,6 +4,6 @@ User guide will be avaliable soon
 
 ## Installation
 Go into the folder where setup.py is and type:
-'''python
+```python
 python setup.py install
-'''
+```
