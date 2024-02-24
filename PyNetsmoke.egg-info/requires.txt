@@ -1,0 +1,6 @@
+numpy
+matplotlib
+cantera
+pandas
+os
+time
