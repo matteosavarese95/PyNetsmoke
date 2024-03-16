@@ -2,6 +2,8 @@ import numpy as np
 import cantera as ct
 import os
 import pandas as pd
+import networkx as nx
+import matplotlib.pyplot as plt
 import time
 from PyNetsmoke.reactor import *
 
@@ -341,6 +343,184 @@ class ReactorNetwork:
             yout[i] = df.values[-1,varid]
 
         return yout
+    
+
+'''Class for generalized CRN'''
+class GeneralCRN:
+
+    def __init__(self, KinFile, Thermofile):
+
+        self.Kinfile_ = KinFile
+        self.Thermofile_ = Thermofile
+
+    # Define function to initialize input layer
+    def InputLayer(self, Inputs):
+
+        # Number of inputs
+        nin = len(Inputs)
+
+        # Create each node as input node
+        nodes = []
+        locs  = []
+        for i in range(nin):
+            nodes.append(("I"+str(i),  "PSR"))
+            locs.append((1, i))
+
+        # Create the attribute of layers
+        self.layers_ = {"input":nodes}
+        self.node_locations_ = locs
+        # Initialize connections
+        self.connections_ = []
+        self.splitting_ratios_ = []
+
+        return self
+    
+    def AddConnectedLayer(self, nr, rtype="PSR"):
+
+        # Count existing nodes
+        total_nodes = sum(len(nodes) for nodes in self.layers_.values())
+
+        # Create new connections with all the nodes in the previous layer
+        n_last = len(list(self.layers_.values())[-1])
+        last_nodes = list(self.layers_.values())[-1]
+        last_layer_name = list(self.layers_.keys())[-1]
+        # Check if last_layer_name is input
+        if last_layer_name == "input":
+            ns = "H0"
+            nl = 0
+            layername = 'hidden0'
+        else:
+            nl = int(last_layer_name[6:]) + 1
+            ns = "H" + str(nl)
+            layername = 'hidden'+str(nl)
+
+        newconns = []
+        splitting_ratios = []
+        split_ratio = round(1/n_last, 4)
+        for i in range(n_last):
+            for j in range(nr):
+                
+                # Name of the new node
+                newnode_name = ns + str(j)
+                
+                # Add new connection between previous layer and new layer
+                newconns.append((last_nodes[i][0], newnode_name))
+                splitting_ratios.append(split_ratio)
+
+        # Create new hidden layer in the layers
+        hidden_layer = []
+        newlocs = []
+        for i in range(nr):
+            newnode_name = ns + str(i)
+            hidden_layer.append((newnode_name, rtype))
+            newlocs.append((int(nl+1)*2+1, i))
+
+        # Update layers
+        self.layers_[layername] = hidden_layer
+        # Update nodes locations
+        for item in newlocs:
+            self.node_locations_.append(item)
+        # Update nodes connections
+        for item in newconns:
+            self.connections_.append(item)
+        # Update splitting rations
+        for item in splitting_ratios:
+            self.splitting_ratios_.append(item)
+
+        return self
+    
+    def AddOutputLayer(self, nr, rtype="PSR"):
+
+        # Count existing nodes
+        total_nodes = sum(len(nodes) for nodes in self.layers_.values())
+
+        # Create new connections with all the nodes in the previous layer
+        n_last = len(list(self.layers_.values())[-1])
+        last_nodes = list(self.layers_.values())[-1]
+        last_layer_name = list(self.layers_.keys())[-1]
+        nl = int(last_layer_name[6:]) + 1
+        ns = "O"
+        layername = 'output'
+
+        newconns = []
+        splitting_ratios = []
+        split_ratio = round(1/n_last, 4)
+        for i in range(n_last):
+            for j in range(nr):
+                
+                # Name of the new node
+                newnode_name = ns + str(j)
+                
+                # Add new connection between previous layer and new layer
+                newconns.append((last_nodes[i][0], newnode_name))
+                splitting_ratios.append(split_ratio)
+
+        # Create new hidden layer in the layers
+        hidden_layer = []
+        newlocs = []
+        for i in range(nr):
+            newnode_name = ns + str(i)
+            hidden_layer.append((newnode_name, rtype))
+            newlocs.append((int(nl+1)*2+1, i))
+
+        # Update layers
+        self.layers_[layername] = hidden_layer
+        # Update nodes locations
+        for item in newlocs:
+            self.node_locations_.append(item)
+        # Update nodes connections
+        for item in newconns:
+            self.connections_.append(item)
+        # Update splitting rations
+        for item in splitting_ratios:
+            self.splitting_ratios_.append(item)
+
+        return self
+    
+    def CreateGraph(self, plot=False):
+        '''This function creates the graph of the CRN using the networkX library'''
+        G = nx.Graph()
+        # Add the nodes
+        for layer, nodes in self.layers_.items():
+            for node, node_type in nodes:
+                if node_type == "PFR":
+                    shape="box"
+                    G.add_node(node, type=node_type, shape=shape)
+                else:
+                    G.add_node(node, type=node_type)
+
+        # Add the connections
+        for i in range(len(self.connections_)):
+            G.add_edge(self.connections_[i][0], self.connections_[i][1], weight=float(self.splitting_ratios_[i]))
+
+        # Plot if true
+        if plot == True:
+            # Create dictionary of nodes positions
+            locations = {}
+            nodes     = list(G.nodes())
+            for i in range(len(nodes)):
+                locations[nodes[i]] = self.node_locations_[i]
+            node_colors = {'PSR': 'lightblue', 'PFR': 'lightgreen'}
+            node_type = nx.get_node_attributes(G, 'type')
+            nx.draw(G, pos=locations, with_labels=True, node_color=[node_colors[node_type[node]] for node in G.nodes()],
+                node_size=1500, edge_color='gray')
+            plt.show()
+
+        return G
+
+
+        
+
+
+
+
+
+
+
+
+
+        
+
 
 
 
