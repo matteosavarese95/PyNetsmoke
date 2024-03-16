@@ -239,3 +239,110 @@ class ReactorNetwork:
             Mlist.append(M)
     
         return Mlist
+    
+    def ExtractSingleInput(self, Rid):
+
+        '''This function will extract the input of the specific
+        reactor Reactor.Rid that is specified and return it as a 
+        cantera quantity object'''
+
+        # Check if SimFolder exists
+        if os.path.exists(self.SimFolder) == False:
+            raise ValueError('Simulation folder is not specified as attribute in reactor network class')
+        
+        # Extract data for reactor Rid
+        filename = self.SimFolder + '/Output/Reactor.' + str(Rid) + '/log.inlet'
+        df = pd.read_csv(filename, sep='\s+')
+
+        # Export T, P
+        T = df.values[-1,1]
+
+        # Extract data for reactor Rid
+        filename2 = self.SimFolder + '/Output/Reactor.' + str(Rid) + '/Output.out'
+        df2 = pd.read_csv(filename2, sep='\s+')
+        P = df2.values[-1,5]
+
+        # In columns, locate all the strings that have '_x" inside
+        sp_list = []
+        Y_val   = []
+        for i, col in enumerate(df.columns[2:]):
+            ss = col.split('(')
+            if len(ss) > 1:
+                sp_list.append(ss[0])
+                Y_val.append(df.values[-1,i])
+
+        # Create solution
+        gas = ct.Solution(self.CanteraMech)
+        # Extract number of species
+        ns = gas.n_species
+        sp_list = gas.species_names
+        Y_old = gas.Y
+        Y_new = Y_old
+        for i, sp in enumerate(sp_list):
+            Y_new[gas.species_index(sp)] = Y_val[i]
+
+        # Set new gas state
+        gas.TPY = T, P, Y_new
+        # Create quantity object with mass from reactor
+        M = ct.Quantity(gas, constant='HP', mass=self.Rlist[Rid].Mf)
+
+        return M
+    
+    def ExtractInputs(self):
+
+        '''This function will extract the inputs of the specific
+        reactor Reactor.Rid that is specified and return it as a 
+        cantera quantity object'''
+
+        # Check if SimFolder exists
+        if os.path.exists(self.SimFolder) == False:
+            raise ValueError('Simulation folder is not specified as attribute in reactor network class')
+        
+        # Initialize list of cantera quantities
+        Mlist = []
+        
+        # Extract data for reactor Rid
+        for i in range(self.Nr):
+            M = self.ExtractSingleInput(i)
+            Mlist.append(M)
+    
+        return Mlist
+    
+    def ExtractOutputSingleVar(self, varname):
+
+        '''This function will extract only one single variable. It will be 
+        faster because we do not need to create the Cantera object representing the phase'''
+
+        # Check if SimFolder exists
+        if os.path.exists(self.SimFolder) == False:
+            raise ValueError('Simulation folder is not specified as attribute in reactor network class')
+        
+        # Find the desired variable
+        if varname == "T":
+            varid = 4
+        elif varname == "time" or varname == "tau":
+            varid = 0
+        else:
+            f0 = self.SimFolder + '/Output/Reactor.0/Output.out'
+            df = pd.read_csv(f0, sep='\s+')
+            for j, col in enumerate(df.columns):
+                ss = col.split('_x')
+                if len(ss) > 0:
+                    if varname == ss[0]:
+                        varid = j
+            if varid == 0:
+                raise ValueError("The variable was not found in columns!")
+
+        # Initialize output
+        yout = np.zeros(self.Nr)
+        for i in range(self.Nr):    
+            filename = self.SimFolder + '/Output/Reactor.' + str(i) + '/Output.out'
+            df = pd.read_csv(filename, sep='\s+')
+            yout[i] = df.values[-1,varid]
+
+        return yout
+
+
+
+
+
