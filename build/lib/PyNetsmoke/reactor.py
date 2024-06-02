@@ -385,7 +385,7 @@ class Reactor:
         X_val   = []
         for i, col in enumerate(df.columns):
             ss = col.split('(')
-            if len(ss) > 1:
+            if len(ss) > 1 and ss[0] != "rho[kg/m3]":
                 if df.values[-1,i] < 1:
                     sp_list.append(ss[0])
                     X_val.append(df.values[-1,i])

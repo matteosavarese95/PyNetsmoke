@@ -344,6 +344,28 @@ class ReactorNetwork:
 
         return yout
     
+    def ExtractOutputMixtureFraction(self, fuel, oxidizer):
+
+        # Extract all the outputs as a cantera quantity object
+        Mlist = self.ExtractOutputs()
+        Zlist = []
+        for i in range(len(Mlist)):
+            Zlist.append(Mlist[i].mixture_fraction(fuel=fuel, oxidizer=oxidizer, element="Bilger"))
+
+        return Zlist
+
+    def ExtractOutputEquivalenceRatio(self, fuel, oxidizer):
+
+        # Extract all the outputs as a cantera quantity object
+        Mlist = self.ExtractOutputs()
+        philist = []
+        for i in range(len(Mlist)):
+            philist.append(Mlist[i].equivalence_ratio(fuel=fuel, oxidizer=oxidizer))
+
+        return philist
+
+
+    
 
 '''Class for generalized CRN'''
 class GeneralCRN:
@@ -671,7 +693,6 @@ class GeneralCRN:
 
         return self
 
-
     def WriteInputs(self):
 
         # Initialize reactor list
@@ -718,7 +739,7 @@ class GeneralCRN:
                     isoutput=True
 
                 r = Reactor(Rtype=rtype, L=parameters["L"], D=parameters["D"], Mf=Mf, CanteraMech=self.CanteraMech_, InletMixture=mixture,
-                                InitialStatus=mixture, isinput=isinput, isoutput=isoutput)
+                                isinput=isinput, isoutput=isoutput)
                 
             # Append reactor to list
             rlist.append(r)
@@ -729,6 +750,12 @@ class GeneralCRN:
 
         # Add network to object
         self.rn_ = rn
+
+        return self
+    
+    def RunCRN(self, netsmoke_path):
+
+        self.rn_.RunSimulation(netsmoke_path)
 
         return self
 

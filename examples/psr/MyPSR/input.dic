@@ -1,0 +1,32 @@
+Dictionary PerfectlyStirredReactor 
+ { 
+     @Type     NonIsothermal-ConstantPressure;
+      @KineticsPreProcessor     kinetic-mechanism; 
+     @Volume    1.000000e+00 m3;
+     @ResidenceTime    1.000000e+00 s;
+     @InitialStatus     initial-status;
+     @InletStatus     inlet-mixture;
+} 
+Dictionary inlet-mixture 
+ { 
+     @Temperature     3.000000e+02 K;
+     @Pressure        1.013250e+05 Pa;
+@Moles     O2 0.190045 
+CH4 0.095023 
+N2 0.714932; 
+} 
+Dictionary initial-status 
+ { 
+     @Temperature     2.500000e+03 K;
+     @Pressure        1.013250e+05 Pa;
+     @Moles     O2 0.190045 
+CH4 0.095023 
+N2 0.714932; 
+} 
+
+Dictionary kinetic-mechanism 
+{ 
+     @Kinetics     /Users/matteosavarese/Desktop/Dottorato/Kinetics/GRI3.0/gri30.CKI; 
+     @Thermodynamics    /Users/matteosavarese/Desktop/Dottorato/Kinetics/GRI3.0/thermo.dat;   
+     @Output     kinetics; 
+ } 

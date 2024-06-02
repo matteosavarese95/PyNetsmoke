@@ -40,3 +40,7 @@ MyPSR.WriteInput(filepath=filepath)
 
 # Run simulation
 MyPSR.RunSimulation(ospath)
+
+# Extract output
+M = MyPSR.ExtractOutput(filepath=filepath)
+print(M.report())
